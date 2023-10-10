@@ -54,9 +54,6 @@ class QueueEntry():
     def retry(self):
         self.attempt += 1
 
-    def __str__(self):
-        return f"Date is {self.run_date} and attempt is {self.attempt}"
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -78,16 +75,14 @@ if __name__ == "__main__":
     for d in dates:
         backfill_queue.put(QueueEntry(d))
 
-    print(backfill_queue.qsize())
-
-    while not backfill_queue.empty():
+    while backfill_queue.empty():
         curr_item = backfill_queue.get()
         print(curr_item.run_date)
         print(curr_item.attempt)
         if curr_item.attempt < args.r:
             exec = sp.run(create_run_script(args, configs, curr_item.run_date))
             if exec.returncode != 0:
-                QueueEntry.retry(curr_item.run_date)
+                curr_item.retry()
                 backfill_queue.put(curr_item)
 
     for run_date in dates:
